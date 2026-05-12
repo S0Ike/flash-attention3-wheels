@@ -28,6 +28,7 @@ $env:CUDA_HOME = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$CudaVersi
 $env:PATH = "$($env:CUDA_HOME)\bin;$($env:PATH)"
 $env:LD_LIBRARY_PATH = "$($env:CUDA_HOME)\lib64;$($env:LD_LIBRARY_PATH)"
 $env:MAX_JOBS = $MaxJobs
+$env:CUDAFLAGS = "-t 2"
 $env:FLASH_ATTENTION_FORCE_BUILD = "TRUE"
 $env:CL = "/wd4996"
 $env:NVCC_PREPEND_FLAGS = "-Xcudafe --diag_suppress=177 -Xcudafe --diag_suppress=221 -Xcudafe --diag_suppress=186 -Xcudafe --diag_suppress=550"
