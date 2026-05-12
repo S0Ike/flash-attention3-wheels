@@ -38,15 +38,11 @@ templates/              # Jinja2 HTML templates for index pages
 - `scripts/generate_matrix.py` — env `MATRIX_TARGET` (linux/windows/arm), `CUDA_VERSIONS`, `TORCH_VERSIONS`; outputs GitHub Actions matrix JSON
 - `scripts/generate_pages.py` — fetches releases via GitHub API, generates pip `--find-links` index pages
 
-## Dev Notes
-
-- 所有 git 命令须加 `--no-pager`（本机 pager 会卡住）
-
 ## CI Optimization
 
-- **Windows CUDA install** (Jimver/cuda-toolkit): uses `method: 'network'` + `sub-packages: '["nvcc", "cudart", "thrust"]'` to download only necessary components instead of the full toolkit
+- **Windows CUDA install** (Jimver/cuda-toolkit): uses `method: 'network'` + `sub-packages: '["crt", "nvcc", "cudart", "thrust"]'` to download only necessary components instead of the full toolkit
 - **Linux/Arm builds**: use Docker images (`nvidia/cuda:XXX-devel-ubuntu22.04`) which already contain full CUDA; no Jimver/cuda-toolkit involved
-- Sub-package rationale: `nvcc` (compiler), `cudart` (cuda.h + runtime), `thrust` (CCCL headers for CUDA 13.0+)
+- Sub-package rationale: `crt` (host_config.h, host_defines.h — required by cuda_runtime.h), `nvcc` (compiler), `cudart` (runtime libs), `thrust` (CCCL headers for CUDA 13.0+)
 
 ## Install
 
