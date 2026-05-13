@@ -2,15 +2,6 @@ name: Build Flash-Attention 3 Wheels (Test build)
 
 on:
   workflow_dispatch:
-    inputs:
-      torch_cuda_arch_list:
-        description: 'TORCH_CUDA_ARCH_LIST for the build (e.g. "12.0" for sm_120 / RTX 5060 Blackwell). Leave empty for default.'
-        required: false
-        default: '12.0'
-      max_jobs:
-        description: 'MAX_JOBS for parallel NVCC compilation (default 4 for sm_120 on 32GB runners). Increase on 64GB+ runners.'
-        required: false
-        default: '4'
 
 jobs:
   build-win-wheels:
@@ -21,10 +12,6 @@ jobs:
         cuda: ["13.0"]
         cuda_full: ["13.0.2"]
         torch: ["2.9.1"]
-    env:
-      TORCH_CUDA_ARCH_LIST: ${{ inputs.torch_cuda_arch_list || '12.0' }}
-      CUDAARCHS: ${{ inputs.torch_cuda_arch_list || '12.0' }}
-      PYTHONUNBUFFERED: "1"
 
     steps:
       - name: Enable Windows long-path
@@ -48,61 +35,10 @@ jobs:
           method: 'network'
           sub-packages: '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]'
 
-      - name: Expand Windows page file
-        shell: pwsh
-        run: |
-          Write-Host "=== Current Page File Config ==="
-          $cs = Get-CimInstance Win32_ComputerSystem
-          Write-Host "AutomaticManagedPagefile: $($cs.AutomaticManagedPagefile)"
-          $pf = Get-CimInstance Win32_PageFileSetting -ErrorAction SilentlyContinue
-          if ($pf) {
-            Write-Host "Page file: $($pf.Name), Initial=$($pf.InitialSize)MB, Max=$($pf.MaximumSize)MB"
-          } else {
-            Write-Host "No explicit page file setting found"
-          }
-          # Try to expand page file (may require reboot to take full effect)
-          try {
-            if ($cs.AutomaticManagedPagefile) {
-              Set-CimInstance -InputObject $cs -Property @{AutomaticManagedPagefile = $false}
-              Write-Host "Disabled automatic page file management"
-            }
-            if ($pf) { Remove-CimInstance -InputObject $pf }
-            New-CimInstance -ClassName Win32_PageFileSetting -Property @{
-              Name = "C:\pagefile.sys"
-              InitialSize = 16384
-              MaximumSize = 32768
-            }
-            Write-Host "Set page file to 16384-32768 MB (may require reboot for full effect)"
-          } catch {
-            Write-Host "Page file config failed (non-fatal): $_"
-          }
-
-      - name: Pre-build diagnostics
-        shell: pwsh
-        run: |
-          Write-Host "=== System Info ==="
-          Write-Host "TORCH_CUDA_ARCH_LIST = $env:TORCH_CUDA_ARCH_LIST"
-          Write-Host "CUDAARCHS            = $env:CUDAARCHS"
-          Write-Host "MAX_JOBS             = ${{ inputs.max_jobs || '4' }}"
-          Write-Host "CUDAFLAGS            = -t 2 (set in build script)"
-          $os = Get-CimInstance Win32_OperatingSystem
-          Write-Host "Total Physical Memory: $([math]::Round($os.TotalVisibleMemorySize / 1MB, 1)) GB"
-          Write-Host "Free Physical Memory:  $([math]::Round($os.FreePhysicalMemory / 1MB, 1)) GB"
-          $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
-          Write-Host "C: Free Disk Space:    $([math]::Round($disk.FreeSpace / 1GB, 1)) GB"
-          Write-Host "CPU Cores:             $env:NUMBER_OF_PROCESSORS"
-
       - name: Build wheel
         shell: pwsh
         run: |
           scripts/build_wheel_test.ps1 `
             -CudaVersion "${{ matrix.cuda }}" `
             -TorchVersion "${{ matrix.torch }}" `
-            -MaxJobs "${{ inputs.max_jobs || '4' }}"
-
-      - name: Upload wheel artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: wheel-win-cu${{ matrix.cuda }}-torch${{ matrix.torch }}-sm120
-          path: C:\tmp\wheels\*.whl
-          retention-days: 7
+            -MaxJobs 7
