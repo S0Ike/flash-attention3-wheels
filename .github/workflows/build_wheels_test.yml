@@ -75,7 +75,7 @@ jobs:
       - name: Build wheel
         shell: pwsh
         run: |
-          scripts/build_wheel.ps1 `
+          scripts/build_wheel_test.ps1 `
             -CudaVersion "${{ matrix.cuda }}" `
             -TorchVersion "${{ matrix.torch }}" `
             -MaxJobs 6
