@@ -2,16 +2,44 @@ name: Build Flash-Attention 3 Wheels (Test build)
 
 on:
   workflow_dispatch:
+    inputs:
+      cuda_versions:
+        description: 'Comma-separated CUDA versions to build (e.g. "12.8,13.0"). Leave empty to use defaults.'
+        required: false
+        default: ''
+      torch_versions:
+        description: 'Comma-separated PyTorch versions to build (e.g. "2.8.0,2.11.0"). Leave empty to use defaults.'
+        required: false
+        default: ''
+      jimver_cuda_toolkit_version:
+        description: 'Jimver/cuda-toolkit action version tag to use for Windows builds (e.g. "v0.2.35"). Leave empty to use default.'
+        required: false
+        default: 'v0.2.35'
 
 jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      win-matrix: ${{ steps.win.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Generate Windows matrix
+        id: win
+        env:
+          MATRIX_TARGET: windows
+          CUDA_VERSIONS: ${{ inputs.cuda_versions }}
+          TORCH_VERSIONS: ${{ inputs.torch_versions }}
+          JIMVER_CUDA_TOOLKIT_VERSION: ${{ inputs.jimver_cuda_toolkit_version || 'v0.2.35' }}
+        run: python scripts/generate_matrix.py
+
   build-win-wheels:
+    needs: prepare-matrix
     runs-on: "cirun-azure-windows-runner--${{ github.run_id }}"
     timeout-minutes: 1080
     strategy:
-      matrix:
-        cuda: ["13.0"]
-        cuda_full: ["13.0.2"]
-        torch: ["2.9.1"]
+      max-parallel: 3
+      fail-fast: false
+      matrix: ${{fromJson(needs.prepare-matrix.outputs.win-matrix)}}
 
     steps:
       - name: Enable Windows long-path
@@ -28,17 +56,26 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Checkout Jimver/cuda-toolkit action
+        uses: actions/checkout@v6
+        with:
+          repository: Jimver/cuda-toolkit
+          ref: ${{ inputs.jimver_cuda_toolkit_version || 'v0.2.35' }}
+          path: .jimver-cuda-toolkit
+
       - name: Install CUDA ${{ matrix.cuda }}
-        uses: Jimver/cuda-toolkit@v0.2.35
+        uses: ./.jimver-cuda-toolkit
         with:
           cuda: ${{ matrix.cuda_full }}
           method: 'network'
-          sub-packages: '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]'
+          # CUDA 13.0+ split crt/nvvm out of nvcc into independent sub-packages;
+          # CUDA 12.x has them bundled inside nvcc and has no crt/nvvm sub-packages.
+          sub-packages: ${{ matrix.cuda == '13.0' && '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]' || '["nvcc", "cudart", "thrust", "cuxxfilt"]' }}
 
       - name: Build wheel
         shell: pwsh
         run: |
-          scripts/build_wheel_test.ps1 `
+          scripts/build_wheel.ps1 `
             -CudaVersion "${{ matrix.cuda }}" `
             -TorchVersion "${{ matrix.torch }}" `
-            -MaxJobs 7
+            -MaxJobs 6
