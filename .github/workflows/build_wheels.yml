@@ -410,7 +410,7 @@ jobs:
           echo "tag=${DATE_TAG}-${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "date=${DATE_TAG}" >> $GITHUB_OUTPUT
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "Flash-Attention 3 Wheels - ${{ steps.tag.outputs.date }}"
