@@ -342,7 +342,9 @@ jobs:
         with:
           cuda: ${{ matrix.cuda_full }}
           method: 'network'
-          sub-packages: '["crt", "nvcc", "cudart", "thrust"]'
+          # CUDA 13.0+ split crt/nvvm out of nvcc into independent sub-packages;
+          # CUDA 12.x has them bundled inside nvcc and has no crt/nvvm sub-packages.
+          sub-packages: ${{ matrix.cuda == '13.0' && '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]' || '["nvcc", "cudart", "thrust", "cuxxfilt"]' }}
 
       - name: Build wheel
         shell: pwsh

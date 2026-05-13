@@ -40,9 +40,20 @@ templates/              # Jinja2 HTML templates for index pages
 
 ## CI Optimization
 
-- **Windows CUDA install** (Jimver/cuda-toolkit): uses `method: 'network'` + `sub-packages: '["crt", "nvcc", "cudart", "thrust"]'` to download only necessary components instead of the full toolkit
+- **Windows CUDA install** (Jimver/cuda-toolkit): uses `method: 'network'` + version-specific `sub-packages` to download only necessary components instead of the full toolkit
 - **Linux/Arm builds**: use Docker images (`nvidia/cuda:XXX-devel-ubuntu22.04`) which already contain full CUDA; no Jimver/cuda-toolkit involved
-- Sub-package rationale: `crt` (host_config.h, host_defines.h — required by cuda_runtime.h), `nvcc` (compiler), `cudart` (runtime libs), `thrust` (CCCL headers for CUDA 13.0+)
+- **Sub-packages vary by CUDA version** (critical — wrong list causes build failure):
+  - **CUDA 13.0+**: `["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]`
+    - `crt` — Compiler tools (cicc, etc.) split from nvcc in 13.0
+    - `nvvm` — Compiler IR (libdevice, etc.) split from nvcc in 13.0
+    - `nvcc` — CUDA compiler (no longer includes crt/nvvm)
+    - `cudart` — CUDA runtime libs + headers (including crt/host_config.h)
+    - `thrust` — CCCL/Thrust headers
+    - `cuxxfilt` — CUDA demangler
+  - **CUDA 12.x**: `["nvcc", "cudart", "thrust", "cuxxfilt"]`
+    - No `crt` or `nvvm` sub-packages exist — their contents are bundled inside `nvcc`
+    - `cudart` includes CRT headers (crt/host_config.h, crt/host_defines.h)
+    - `nvcc` includes cicc, ptxas, libdevice internally
 
 ## Install
 
