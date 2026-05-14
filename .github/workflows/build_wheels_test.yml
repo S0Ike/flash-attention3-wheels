@@ -70,7 +70,11 @@ jobs:
           method: 'network'
           # CUDA 13.0+ split crt/nvvm out of nvcc into independent sub-packages;
           # CUDA 12.x has them bundled inside nvcc and has no crt/nvvm sub-packages.
-          sub-packages: ${{ matrix.cuda == '13.0' && '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]' || '["nvcc", "cudart", "thrust", "cuxxfilt"]' }}
+          # On Windows, _dev sub-packages provide headers (+ import libs) required by
+          # PyTorch C++ extensions (e.g. CUDAContextLight.h includes cusparse.h,
+          # cublas_v2.h, cusolverDn.h).  Runtime DLLs are not needed at build time —
+          # they come from PyTorch's pip packages (nvidia-cublas-cu12, etc.).
+          sub-packages: ${{ matrix.cuda == '13.0' && '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]' || '["nvcc", "cudart", "thrust", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]' }}
 
       - name: Build wheel
         shell: pwsh

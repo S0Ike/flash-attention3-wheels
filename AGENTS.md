@@ -43,17 +43,22 @@ templates/              # Jinja2 HTML templates for index pages
 - **Windows CUDA install** (Jimver/cuda-toolkit): uses `method: 'network'` + version-specific `sub-packages` to download only necessary components instead of the full toolkit
 - **Linux/Arm builds**: use Docker images (`nvidia/cuda:XXX-devel-ubuntu22.04`) which already contain full CUDA; no Jimver/cuda-toolkit involved
 - **Sub-packages vary by CUDA version** (critical — wrong list causes build failure):
-  - **CUDA 13.0+**: `["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt"]`
+  - On Windows, `_dev` variants (e.g. `cusparse_dev`) provide headers + import libs; runtime variants (e.g. `cusparse`) provide only DLLs. For C++ extension builds, only `_dev` packages are needed — runtime DLLs come from PyTorch's pip packages.
+  - **CUDA 13.0+**: `["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]`
     - `crt` — Compiler tools (cicc, etc.) split from nvcc in 13.0
     - `nvvm` — Compiler IR (libdevice, etc.) split from nvcc in 13.0
     - `nvcc` — CUDA compiler (no longer includes crt/nvvm)
     - `cudart` — CUDA runtime libs + headers (including crt/host_config.h)
     - `thrust` — CCCL/Thrust headers
     - `cuxxfilt` — CUDA demangler
-  - **CUDA 12.x**: `["nvcc", "cudart", "thrust", "cuxxfilt"]`
+    - `cusparse_dev` — cuSPARSE headers (required by PyTorch's CUDAContextLight.h)
+    - `cublas_dev` — cuBLAS headers (cublas_v2.h, cublasLt.h required by PyTorch)
+    - `cusolver_dev` — cuSOLVER headers (cusolverDn.h required by PyTorch)
+  - **CUDA 12.x**: `["nvcc", "cudart", "thrust", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]`
     - No `crt` or `nvvm` sub-packages exist — their contents are bundled inside `nvcc`
     - `cudart` includes CRT headers (crt/host_config.h, crt/host_defines.h)
     - `nvcc` includes cicc, ptxas, libdevice internally
+    - `cusparse_dev` / `cublas_dev` / `cusolver_dev` — headers for CUDA math libraries
 
 ## Install
 
