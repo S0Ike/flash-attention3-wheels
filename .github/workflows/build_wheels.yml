@@ -348,7 +348,7 @@ jobs:
           # PyTorch C++ extensions (e.g. CUDAContextLight.h includes cusparse.h,
           # cublas_v2.h, cusolverDn.h).  Runtime DLLs are not needed at build time —
           # they come from PyTorch's pip packages (nvidia-cublas-cu12, etc.).
-          sub-packages: ${{ matrix.cuda == '13.0' && '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]' || '["nvcc", "cudart", "thrust", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]' }}
+          sub-packages: ${{ matrix.cuda >= '13.0' && '["crt", "nvcc", "cudart", "thrust", "nvvm", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]' || '["nvcc", "cudart", "thrust", "cuxxfilt", "cusparse_dev", "cublas_dev", "cusolver_dev"]' }}
 
       - name: Build wheel
         shell: pwsh
