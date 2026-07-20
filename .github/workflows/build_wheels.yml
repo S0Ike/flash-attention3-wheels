@@ -368,8 +368,12 @@ jobs:
           gh release edit "${{ steps.tag.outputs.tag }}" \
              --draft=false --repo "${{ github.repository }}"
 
-  update-pages:
-    needs: create-release
-    uses: ./.github/workflows/update-pages.yml
-    with:
-      release_tag: ${{ needs.create-release.outputs.tag }}
+  deploy-pages:
+    needs: [build-wheels] # It might list other jobs here too
+
+    permissions:
+      actions: write
+      pages: write
+      id-token: write
+
+    uses: S0Ike/flash-attention3-wheels/.github/workflows/update-pages.yml@0dc6f58b8e6292caaa9ae4a930f6bbe086a8ff22 
