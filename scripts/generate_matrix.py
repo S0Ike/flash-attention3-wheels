@@ -128,6 +128,9 @@ def build_pytorch_cuda_table() -> dict[str, dict[str, set[str]]]:
 
         torch_ver, cuda_tag = parsed
 
+        if any(tag in torch_ver for tag in ["dev", "rc", "nightly"]):
+            continue
+
         torch_ver_tuple = tuple(map(int, torch_ver.split(".")))
         cuda_ver_tuple = (int(cuda_tag[2:4]), int(cuda_tag[4:]))
 
