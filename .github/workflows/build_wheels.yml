@@ -369,11 +369,10 @@ jobs:
              --draft=false --repo "${{ github.repository }}"
 
   deploy-pages:
-    needs: [build-wheels] # It might list other jobs here too
-
+    needs: [build-wheels]
     permissions:
       actions: write
       pages: write
       id-token: write
-
-    uses: S0Ike/flash-attention3-wheels/.github/workflows/update-pages.yml@0dc6f58b8e6292caaa9ae4a930f6bbe086a8ff22 
+      contents: read # Add this line to allow the workflow to read repository files
+    uses: S0Ike/flash-attention3-wheels/.github/workflows/update-pages.yml@0dc6f58b8e6292caaa9ae4a930f6bbe086a8ff22
